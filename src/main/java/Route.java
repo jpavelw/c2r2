@@ -15,7 +15,11 @@ import java.util.Map;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.ArrayList;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
@@ -33,6 +37,7 @@ public class Route {
 
     private final String CLIENT_ID = System.getenv().get("CLIENT_ID");
     private final Business business = new Business();
+    private GitHubCalls gCall;
 
     public Route(){
         staticFileLocation("/public");
@@ -41,23 +46,24 @@ public class Route {
         get("/", (req, res) -> {
         	if(!this.checkLogin(req, res))
         		return null;
-            Map<String, Object> attributes = new HashMap<>();
-            attributes.put("message", "Hello World!");
+        	Map<String, Object> attr = new HashMap<>();
+        	attr.put("hidelogout", true);
+        	attr.put("message", "Hello World!");
             /*for (Map.Entry<String, String> entry : req.cookies().entrySet()) {
                 System.out.println("Key: " + entry.getKey() + " | Value: " + entry.getValue());
             }*/
-            return new ModelAndView(attributes, "hello.ftl");
+            return new ModelAndView(attr, "hello.ftl");
         }, new FreeMarkerEngine());
 
-        get("/hello/:name", (req, res) -> {
+        /*get("/hello/:name", (req, res) -> {
             return "Hello " + req.params(":name");
-        });
+        });*/
 
         // matches "GET /say/hello/to/world"
         // request.splat()[0] is 'hello' and request.splat()[1] 'world'
-        get("/say/*/to/*", (req, res) -> {
-            return "Number of splat parameters: " + req.splat().length;
-        });
+        //get("/say/*/to/*", (req, res) -> {
+            //return "Number of splat parameters: " + req.splat().length;
+        //});
 
         get("/github/togithub", (req, res) -> {
             //option to generate random state for security purposes
@@ -125,6 +131,7 @@ public class Route {
             attr.put("username", req.queryParams("username"));
             attr.put("email", req.queryParams("email"));
             attr.put("name", req.queryParams("name"));
+            attr.put("hidelogout", true);
             return new ModelAndView(attr, "sign-up.ftl");
         }, new FreeMarkerEngine());
 
@@ -155,6 +162,7 @@ public class Route {
             attr.put("email", req.queryParams("email"));
             attr.put("name", req.queryParams("name"));
             attr.put("errormessage", errormessage);
+            attr.put("hidelogout", true);
             return new ModelAndView(attr, "sign-up.ftl");
         }, new FreeMarkerEngine());
 
@@ -172,18 +180,41 @@ public class Route {
             return new ModelAndView(attr, "gh-succ-auth.ftl");
         }, new FreeMarkerEngine());
         
-        get("/releases", (req, res) -> {
+        get("/repositories", (req, res) -> {
         	if(!this.checkLogin(req, res))
         		return null;
-        	return new ModelAndView(null, "repo-info.ftl");
+        	Map<String, Object> attr = new HashMap<>();
+        	attr.put("hidelogout", true);
+        	String token = req.session().attribute("token");
+        	if(token != null){
+        		JsonArray repositories = this.business.getRepositories();
+        		if(repositories != null){
+        			attr.put("repositories", repositories.iterator());
+        		} else {
+        			attr.put("errormessage", "Could not get repositories");
+        		}
+        	} else {
+        		attr.put("errormessage", "Could not get token");
+        	}
+        	
+        	return new ModelAndView(attr, "repositories.ftl");
         }, new FreeMarkerEngine());
         
-        post("/releases", (req, res) -> {
+        get("/repository/add", (req, res) -> {
+        	if(!this.checkLogin(req, res))
+        		return null;
+        	Map<String, Object> attr = new HashMap<>();
+        	attr.put("hidelogout", true);
+        	return new ModelAndView(attr, "repo-info.ftl");
+        }, new FreeMarkerEngine());
+        
+        post("/repository/add", (req, res) -> {
         	if(!this.checkLogin(req, res))
         		return null;
         	String token = req.session().attribute("token");
+        	Map<String, Object> attr = new HashMap<>();
+        	attr.put("hidelogout", true);
         	if(token != null){
-        	//if(true){
         		String username = null;
         		String repoName = null;
         		String choice = req.queryParams("choice");
@@ -199,18 +230,19 @@ public class Route {
             			username = elems[elems.length - 2];
             			repoName = elems[elems.length - 1];
             			if(this.validateRepo(username, repoName)){
-            				GitHubCalls gCall = new GitHubCalls(token, username, repoName);
-            				String[] result = this.business.saveRepository(gCall.getRepository());
+            				this.gCall = new GitHubCalls(token, username, repoName);
+            				String[] result = this.business.saveRepository(username, repoName, gCall.getRepository());
             				if(result[0].equals("OK")){
-            					return "Repository saved";
+            					res.redirect("/repositories");
+            					return null;
             				} else {
-            					return "Repository NOT saved";
+            					attr.put("errormessage", "Repository NOT saved");
             				}
             			} else {
-            				return "Invalid repo";
+            				attr.put("errormessage", "Invalid rep");
             			}
         			} else {
-        				return "It is not a valid GitHub URL";
+        				attr.put("errormessage", "It is not a valid GitHub URL");
         			}
         		} else if(choice.equals("detailed")){
         			pattern = Pattern.compile("^[a-zA-Z0-9]+(-?[a-zA-Z0-9]+)*$");
@@ -222,15 +254,16 @@ public class Route {
         				matcher = pattern.matcher(repoName);
         				if(matcher.matches()){
         					if(this.validateRepo(username, repoName)){
-                				return "Valid repo";
+        						res.redirect("/repositories");
+                				return null;
                 			} else {
-                				return "Invalid repo";
+                				attr.put("errormessage", "Invalid repo");
                 			}
         				} else {
-            				return "It is not a valid GitHub repository name";
+            				attr.put("errormessage", "It is not a valid GitHub repository name");
             			}
         			} else {
-        				return "It is not a valid GitHub username";
+        				attr.put("errormessage", "It is not a valid GitHub username");
         			}
         		}
         		//GitHubCalls gCall = new GitHubCalls(token, "alibaba", "weex");
@@ -262,16 +295,87 @@ public class Route {
     				} catch(Exception e) { }
     				return stringBuilder.toString();
     			}*/
-        		return username + " | " + repoName + " | " + choice;
+        	} else {
+        		attr.put("errormessage", "Could not get token");
         	}
-        	return "Could not get token";
+        	return new ModelAndView(attr, "repo-info.ftl");
+        }, new FreeMarkerEngine());
+        
+        get("/repository/:owner/:repository", (req, res) -> {
+        	if(!this.checkLogin(req, res))
+        		return null;
+        	String token = req.session().attribute("token");
+        	Map<String, Object> attr = new HashMap<>();
+        	if(token != null){
+        		attr.put("owner", req.params(":owner"));
+                attr.put("repository", req.params(":repository"));
+        	} else {
+        		attr.put("errormessage", "Could not get token");
+        	}
+            attr.put("hidelogout", true);
+        	return new ModelAndView(attr, "repository-info.ftl");
+        }, new FreeMarkerEngine());
+        
+        get("/repository/:owner/:repository/contributors", (req, res) -> {
+        	if(!this.checkLogin(req, res))
+        		return null;
+        	String token = req.session().attribute("token");
+        	Map<String, Object> attr = new HashMap<>();
+            attr.put("hidelogout", true);
+        	if(token != null){
+        		/*String owner = req.params(":owner");
+            	String repository = req.params(":repository");
+        		this.gCall = new GitHubCalls(token, owner, repository);
+        		if(this.business.getRepository(owner, repository) != null){
+        			this.gCall.getReleases();
+            		this.gCall.getCommitsInfo();
+            		this.gCall.makeCallsOnContributorCommit();
+            		String contribs = this.gCall.getContributors();
+        			if(!this.business.saveContributors(contribs)){
+        				attr.put("errormessage", "Could not save contributors");
+        			}
+        		}*/
+        		attr.put("owner", req.params(":owner"));
+                attr.put("repository", req.params(":repository"));
+        	} else {
+        		attr.put("errormessage", "Could not get token");
+        		attr.put("detailedmessage", "Please verify you have a valid token to make github calls");
+        	}
+        	return new ModelAndView(attr, "contributors.ftl");
+        }, new FreeMarkerEngine());
+        
+        get("/api/:owner/:repository/contributors", (req, res) -> {
+        	if(!this.checkLogin(req, res))
+        		return "{\"statusCode\":500, \"message\":\"You do not have permission to make this call\"}";
+        	
+        	String token = req.session().attribute("token");
+        	if(token != null){
+        		String owner = req.params(":owner");
+            	String repository = req.params(":repository");
+        		if(this.business.getRepository(owner, repository) != null){
+        			String response = this.business.apiGetContributors();
+        			if(response != null)
+        				return response;
+        		}	
+        	}
+        	return "{\"statusCode\":500, \"message\":\"Could not get contributors\"}";
         });
         
         get("/user/login", (req, res) -> {
-        	return new ModelAndView(null, "login.ftl");
+        	if(req.session().attribute("username") != null && req.session().attribute("token") != null){
+        		res.redirect("/");
+        		return null;
+        	}
+        	Map<String, Object> attr = new HashMap<>();
+            attr.put("hidemenu", true);
+            attr.put("hidesession", true);
+        	return new ModelAndView(attr, "login.ftl");
         }, new FreeMarkerEngine());
         
         post("/user/login", (req, res) -> {
+        	if(req.session().attribute("username") != null && req.session().attribute("token") != null){
+        		return null;
+        	}
         	String username = req.queryParams("username");
             String password = req.queryParams("password");
             
@@ -295,7 +399,8 @@ public class Route {
         });
     }
     
-    private boolean validateRepo(String username, String repository){
+    @SuppressWarnings("unused")
+	private boolean validateRepo(String username, String repository){
     	String url = "https://api.github.com/repos/" + username + "/" + repository;
     	HttpResponse<JsonNode> jsonRes;
 		try {
@@ -310,7 +415,7 @@ public class Route {
 				return true;
 			} catch(JSONException e){
 				e.printStackTrace();
-				System.out.println("Could not get ID");
+				System.out.println("Could not get something");
 			}
 			
 		} catch (UnirestException e) {

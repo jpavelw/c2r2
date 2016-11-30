@@ -1,6 +1,6 @@
 <#include "header.ftl">
           <div class="jumbotron repo-div">
-            <form action="/releases" method="post">
+            <form action="/repository/add" method="post">
                 <h2 class="text-align-center">Repository Information</h2>
                 <div class="form-group">
                     <label>Username</label>

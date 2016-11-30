@@ -12,6 +12,7 @@
         <link rel="stylesheet" type="text/css" href="/css/sticky-footer-navbar.css" />
         <script type="text/javascript" src="/js/jquery.js"></script>
         <script type="text/javascript" src="/js/bootstrap.min.js"></script>
+        <script type="text/javascript" src="/js/chart.min.js"></script>
         <script type="text/javascript" src="/js/script.js"></script>
     </body>
 </html>

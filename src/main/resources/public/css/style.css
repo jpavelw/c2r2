@@ -6,7 +6,7 @@
     display: none;
 }
 
-.login-div, .signup-div, .repo-div {
+.login-div, .signup-div, .repo-div, .repos-div, .repo-info-div {
     margin: 3% auto 20px auto !important;
     width: 50%;
     padding-top: 30px !important;

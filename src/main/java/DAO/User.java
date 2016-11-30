@@ -1,9 +1,6 @@
 package DAO;
 
-import org.bson.types.ObjectId;
-
 public class User {
-	private ObjectId _id;
 	private String username;
 	private String password;
     private String email;
@@ -19,9 +16,6 @@ public class User {
         this.token = token;
         this.name = name;
 	}
-
-    public ObjectId getId() { return _id; }
-	public void setId(ObjectId _id) { this._id = _id; }
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
@@ -40,7 +34,7 @@ public class User {
 
     @Override
     public String toString(){
-        return this.username + "-" + this.name + "-" + this.email + "-" + this.password + "-" + this.token + " - " + _id;
+        return this.username + "-" + this.name + "-" + this.email + "-" + this.password + "-" + this.token;
     }
 }
 /*
