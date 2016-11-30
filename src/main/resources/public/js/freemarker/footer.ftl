@@ -13,7 +13,6 @@
         <script type="text/javascript" src="/js/jquery.js"></script>
         <script type="text/javascript" src="/js/bootstrap.min.js"></script>
         <script type="text/javascript" src="/js/chart.min.js"></script>
-        <script type="text/javascript" src="/js/spin.min.js"></script>
         <script type="text/javascript" src="/js/script.js"></script>
     </body>
 </html>

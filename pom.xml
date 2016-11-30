@@ -77,12 +77,12 @@
     <dependency>
     	<groupId>org.eclipse.egit.github.core</groupId>
     	<artifactId>github.core</artifactId>
-    	<version>4.0</version>
+    	<version>4.1</version>
     </dependency>
     <dependency>
     	<groupId>rit.swen772.ccr</groupId>
     	<artifactId>core</artifactId>
-    	<version>1.0</version>
+    	<version>1.1</version>
     </dependency>
     <dependency>
     	<groupId>com.google.code.gson</groupId>

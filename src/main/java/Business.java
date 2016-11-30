@@ -2,6 +2,7 @@ import DAO.User;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.bson.Document;
 import org.mindrot.jbcrypt.BCrypt;
@@ -78,6 +79,23 @@ public class Business {
     	return false;
     }
     
+    public boolean saveReleases(String releases){
+    	try {
+    		JsonObject releasesObjects = this.parser.parse(releases).getAsJsonObject();
+    		if(releasesObjects != null && releasesObjects.entrySet().size() > 0){
+    			List<Document> releasesList = new ArrayList<Document>();
+    			for (Map.Entry<String, JsonElement> entry : releasesObjects.entrySet()) {
+    				Document release = Document.parse(this.gson.toJson(entry.getValue().getAsJsonObject()));
+    				release.append("repository", this.currentRepository.get("_id"));
+    				releasesList.add(release);
+    			}
+            	if(this.mongoDB.saveReleases(releasesList))
+            		return true;
+    		}
+    	} catch(Exception e) { e.printStackTrace(); }
+    	return false;
+    }
+    
     public JsonArray getRepositories(){
     	List<Document> repositoryList = this.mongoDB.getRepositories(this.currentUser);
     	JsonArray repositoryArray = null;
@@ -137,6 +155,43 @@ public class Business {
         		for(JsonElement elem : contributors){
         			jResponse.get("login").getAsJsonArray().add(elem.getAsJsonObject().get("contributor_name").getAsString());
         			jResponse.get("contributions").getAsJsonArray().add(elem.getAsJsonObject().get("number_of_contributions").getAsString());
+        		}
+        		jResponse.addProperty("statusCode", 200);
+        		response = this.gson.toJson(jResponse);
+    		}
+    	} catch(Exception e) { e.printStackTrace(); }
+    	
+    	return response;
+    }
+    
+    public JsonArray getReleases(){
+    	List<Document> releasesList = this.mongoDB.getReleases(this.currentRepository.getObjectId("_id"));
+    	JsonArray releasesArray = null;
+    	if(releasesList != null){
+    		Document doc = new Document("list", releasesList);
+    	    String json = doc.toJson();
+    	    String jList = json.substring(json.indexOf(":")+2, json.length()-1);
+    	    releasesArray = this.parser.parse(jList).getAsJsonArray();
+    	}
+    	return releasesArray;
+    }
+    
+    public String apiGetReleases(){
+    	String response = null;
+    	
+    	try {
+    		JsonArray releases = this.getReleases();
+    		if(releases != null){
+    			JsonObject jResponse = new JsonObject();
+            	jResponse.add("tag_name", new JsonArray());
+            	jResponse.add("commits_per_release", new JsonArray());
+            	jResponse.add("release_additions", new JsonArray());
+            	jResponse.add("release_deletions", new JsonArray());
+        		for(JsonElement elem : releases){
+        			jResponse.get("tag_name").getAsJsonArray().add(elem.getAsJsonObject().get("tag_name").getAsString());
+        			jResponse.get("commits_per_release").getAsJsonArray().add(elem.getAsJsonObject().get("commits_per_release").getAsInt());
+        			jResponse.get("release_additions").getAsJsonArray().add(elem.getAsJsonObject().get("release_additions").getAsInt());
+        			jResponse.get("release_deletions").getAsJsonArray().add(elem.getAsJsonObject().get("release_deletions").getAsInt());
         		}
         		jResponse.addProperty("statusCode", 200);
         		response = this.gson.toJson(jResponse);

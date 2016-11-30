@@ -1,25 +1,16 @@
 import static spark.Spark.*;
-import static spark.Spark.get;
 import spark.ModelAndView;
 import spark.Request;
 import spark.Response;
 import spark.template.freemarker.FreeMarkerEngine;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.ArrayList;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
@@ -36,6 +27,7 @@ import DAO.User;
 public class Route {
 
     private final String CLIENT_ID = System.getenv().get("CLIENT_ID");
+    private final String MY_TOKEN = System.getenv().get("TOKEN");
     private final Business business = new Business();
     private GitHubCalls gCall;
 
@@ -44,16 +36,9 @@ public class Route {
         port(Integer.valueOf(System.getenv("PORT")));
 
         get("/", (req, res) -> {
-        	if(!this.checkLogin(req, res))
-        		return null;
-        	Map<String, Object> attr = new HashMap<>();
-        	attr.put("hidelogout", true);
-        	attr.put("message", "Hello World!");
-            /*for (Map.Entry<String, String> entry : req.cookies().entrySet()) {
-                System.out.println("Key: " + entry.getKey() + " | Value: " + entry.getValue());
-            }*/
-            return new ModelAndView(attr, "hello.ftl");
-        }, new FreeMarkerEngine());
+        	res.redirect("/repositories");
+        	return null;
+        });
 
         /*get("/hello/:name", (req, res) -> {
             return "Hello " + req.params(":name");
@@ -323,18 +308,6 @@ public class Route {
         	Map<String, Object> attr = new HashMap<>();
             attr.put("hidelogout", true);
         	if(token != null){
-        		/*String owner = req.params(":owner");
-            	String repository = req.params(":repository");
-        		this.gCall = new GitHubCalls(token, owner, repository);
-        		if(this.business.getRepository(owner, repository) != null){
-        			this.gCall.getReleases();
-            		this.gCall.getCommitsInfo();
-            		this.gCall.makeCallsOnContributorCommit();
-            		String contribs = this.gCall.getContributors();
-        			if(!this.business.saveContributors(contribs)){
-        				attr.put("errormessage", "Could not save contributors");
-        			}
-        		}*/
         		attr.put("owner", req.params(":owner"));
                 attr.put("repository", req.params(":repository"));
         	} else {
@@ -352,13 +325,54 @@ public class Route {
         	if(token != null){
         		String owner = req.params(":owner");
             	String repository = req.params(":repository");
-        		if(this.business.getRepository(owner, repository) != null){
-        			String response = this.business.apiGetContributors();
-        			if(response != null)
-        				return response;
-        		}	
+            	//if(this.fetchContributors(owner, repository, token)){
+            		if(this.business.getRepository(owner, repository) != null){
+            			String response = this.business.apiGetContributors();
+            			if(response != null)
+            				return response;
+            		}
+            	/*} else {
+            		return "{\"statusCode\":500, \"message\":\"Could not save contributors\"}";
+            	}*/
         	}
         	return "{\"statusCode\":500, \"message\":\"Could not get contributors\"}";
+        });
+        
+        get("/repository/:owner/:repository/releases", (req, res) -> {
+        	if(!this.checkLogin(req, res))
+        		return null;
+        	String token = req.session().attribute("token");
+        	Map<String, Object> attr = new HashMap<>();
+            attr.put("hidelogout", true);
+            if(token != null){
+        		attr.put("owner", req.params(":owner"));
+                attr.put("repository", req.params(":repository"));
+        	} else {
+        		attr.put("errormessage", "Could not get token");
+        		attr.put("detailedmessage", "Please verify you have a valid token to make github calls");
+        	}
+            return new ModelAndView(attr, "releases.ftl");
+        }, new FreeMarkerEngine());
+        
+        get("/api/:owner/:repository/releases", (req, res) -> {
+        	if(!this.checkLogin(req, res))
+        		return "{\"statusCode\":500, \"message\":\"You do not have permission to make this call\"}";
+        	
+        	String token = req.session().attribute("token");
+        	if(token != null){
+        		String owner = req.params(":owner");
+            	String repository = req.params(":repository");
+            	//if(this.fetchReleases(owner, repository, token)){
+            		if(this.business.getRepository(owner, repository) != null){
+            			String response = this.business.apiGetReleases();
+            			if(response != null)
+            				return response;
+            		}
+            	/*} else {
+            		return "{\"statusCode\":500, \"message\":\"Could not save releases\"}";
+            	}*/
+        	}
+        	return "{\"statusCode\":500, \"message\":\"Could not get releases\"}";
         });
         
         get("/user/login", (req, res) -> {
@@ -384,7 +398,7 @@ public class Route {
             if (user != null) {
                 req.session().attribute("username", user.getUsername());
                 req.session().attribute("token", user.getToken());
-            	res.redirect("/");
+            	res.redirect("/repositories");
                 return null;
             }
             Map<String, Object> attr = new HashMap<>();
@@ -422,6 +436,35 @@ public class Route {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+    	return false;
+    }
+    
+    private boolean fetchContributors(String owner, String repository, String token){
+		this.gCall = new GitHubCalls(token, owner, repository);
+		if(this.business.getRepository(owner, repository) != null){
+			this.gCall.getReleases();
+    		this.gCall.getCommitsInfo();
+    		this.gCall.makeCallsOnContributorCommit(MY_TOKEN);
+    		String contribs = this.gCall.getContributors();
+			if(this.business.saveContributors(contribs)){
+				return true;
+			}
+		}
+    	return false;
+    }
+    
+    private boolean fetchReleases(String owner, String repository, String token){
+		//this.gCall = new GitHubCalls(token, owner, repository);
+		//if(this.business.getRepository(owner, repository) != null){
+			//this.gCall.getReleases();
+    		//this.gCall.getCommitsInfo();
+    		//this.gCall.makeCallsOnContributorCommit();
+    		String releases = this.gCall.getJSONReleases();
+    		//String releases = "{\"v0.8.0\":{\"tag_name\":\"v0.8.0\",\"commits_per_release\":1019,\"release_additions\":0,\"release_deletions\":0},\"v0.7.0\":{\"tag_name\":\"v0.7.0\",\"commits_per_release\":823,\"release_additions\":0,\"release_deletions\":0},\"v0.6.1\":{\"tag_name\":\"v0.6.1\",\"commits_per_release\":1225,\"release_additions\":0,\"release_deletions\":0},\"v0.5.0\":{\"tag_name\":\"v0.5.0\",\"commits_per_release\":637,\"release_additions\":143381,\"release_deletions\":437}}";
+			if(this.business.saveReleases(releases)){
+				return true;
+			}
+		//}
     	return false;
     }
     

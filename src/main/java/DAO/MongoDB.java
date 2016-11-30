@@ -2,7 +2,6 @@ package DAO;
 
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
@@ -29,11 +28,13 @@ public class MongoDB {
 	//private MongoCollection<Document> owners;
 	private MongoCollection<Document> repositories;
 	private MongoCollection<Document> contributors;
+	private MongoCollection<Document> releases;
 
 	private final String USER_COLLECTION = "user";
 	//private final String OWNER_COLLECTION = "owner";
 	private final String REPOSITORY_COLLECTION = "repository";
 	private final String CONTRIBUTOR_COLLECTION = "contributor";
+	private final String RELEASE_COLLECTION = "release";
 	
 	private MongoDB(){
 		try {
@@ -44,6 +45,7 @@ public class MongoDB {
 			//this.owners = this.database.getCollection(this.OWNER_COLLECTION);
 			this.repositories = this.database.getCollection(this.REPOSITORY_COLLECTION);
 			this.contributors = this.database.getCollection(this.CONTRIBUTOR_COLLECTION);
+			this.releases = this.database.getCollection(this.RELEASE_COLLECTION);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -111,36 +113,14 @@ public class MongoDB {
 			repos = this.repositories.find(filter).into(new ArrayList<>());
 		} catch (Exception e) { e.printStackTrace(); }
 		
-		/*BasicDBObject filter = new BasicDBObject("_id", new BasicDBObject("$in", _user.get("repositories")));
-		MongoCursor<Document> cursor = this.repositories.find(filter).iterator();
-		
-		try {
-			if(cursor.hasNext()){
-				repos = new ArrayList<>();
-			}
-			
-		    while (cursor.hasNext()) {
-		    	repos.add(cursor.next());
-		    }
-		} finally { cursor.close(); }*/
-		
 		return repos;
 	}
 	
 	public List<Document> getContributors(ObjectId _id){
 		List<Document> contribs = null;
-		
-		MongoCursor<Document> cursor = this.contributors.find(eq("repository", _id)).iterator();
-		
 		try {
-			if(cursor.hasNext()){
-				contribs = new ArrayList<>();
-			}
-			
-		    while (cursor.hasNext()) {
-		    	contribs.add(cursor.next());
-		    }
-		} finally { cursor.close(); }
+			contribs = this.contributors.find(eq("repository", _id)).into(new ArrayList<>());;
+		} catch(Exception e) { e.printStackTrace(); }
 		
 		return contribs;
 	}
@@ -167,6 +147,24 @@ public class MongoDB {
     	return false;
     }
 	
+	public boolean saveReleases(List<Document> releases){
+    	try {
+    		this.releases.insertMany(releases);
+    		return true;
+    	} catch(Exception e) { e.printStackTrace(); }
+    	
+    	return false;
+    }
+	
+	public List<Document> getReleases(ObjectId _repoid){
+		List<Document> releases = null;
+		try {
+			releases = this.releases.find(eq("repository", _repoid)).sort(new BasicDBObject("tag_name", 1)).into(new ArrayList<>());
+		} catch (Exception e) { e.printStackTrace(); }
+		
+		return releases;
+	}
+	
 	public boolean closeConnection(){
 		synchronized (MongoDB.class) {
 			try {
@@ -179,10 +177,3 @@ public class MongoDB {
 		}
 	}
 }
-/*
- * Document doc = Document.parse("{ \"list\":"+json+"}");
-    Object list = doc.get("list");
-    if(list instanceof List<?>) {
-        return (List<Document>) doc.get("list");
-    }
-    */
