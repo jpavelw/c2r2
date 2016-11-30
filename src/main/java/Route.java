@@ -27,7 +27,7 @@ import DAO.User;
 public class Route {
 
     private final String CLIENT_ID = System.getenv().get("CLIENT_ID");
-    private final String MY_TOKEN = System.getenv().get("TOKEN");
+    //private final String MY_TOKEN = System.getenv().get("TOKEN");
     private final Business business = new Business();
     private GitHubCalls gCall;
 
@@ -444,7 +444,7 @@ public class Route {
 		if(this.business.getRepository(owner, repository) != null){
 			this.gCall.getReleases();
     		this.gCall.getCommitsInfo();
-    		this.gCall.makeCallsOnContributorCommit(MY_TOKEN);
+    		//this.gCall.makeCallsOnContributorCommit(MY_TOKEN);
     		String contribs = this.gCall.getContributors();
 			if(this.business.saveContributors(contribs)){
 				return true;
