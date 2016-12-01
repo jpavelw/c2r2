@@ -42,7 +42,34 @@ function show_loading(){
     $("#overlay").show();
 };
 
-function load_metrics_contrib(){
+function load_metrics(){
+    show_loading();
+
+    var path = window.location.pathname;
+    var vars = path.split("/")
+    var _link = "/api/" + vars[2] + "/" + vars[3] + "/metrics";
+
+    $.ajax({
+        type: "GET",
+        dataType: "json",
+        url: _link,
+        success: function(data) {
+            if(data.statusCode == 200){
+                $("#overlay").hide();
+            } else {
+                $("#overlay").hide();
+                $("#options-metrics").hide();
+                alert("error not 200 - " + data.message);
+            }
+        }, error: function(data) {
+            $("#overlay").hide();
+            $("#options-metrics").hide();
+            alert("error - " + data.message);
+        }
+    });
+}
+
+function show_contrib(){
 
     show_loading();
 
@@ -189,7 +216,7 @@ function show_loc_removed(_color, data){
     });
 }
 
-function load_metrics_releases_loc(){
+function show_metrics_releases(){
     show_loading();
 
     var ctx = $("#metrics-releases");

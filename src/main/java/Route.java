@@ -27,7 +27,7 @@ import DAO.User;
 public class Route {
 
     private final String CLIENT_ID = System.getenv().get("CLIENT_ID");
-    //private final String MY_TOKEN = System.getenv().get("TOKEN");
+    private final String MY_TOKEN = System.getenv().get("TOKEN");
     private final Business business = new Business();
     private GitHubCalls gCall;
 
@@ -174,6 +174,10 @@ public class Route {
         	if(token != null){
         		JsonArray repositories = this.business.getRepositories();
         		if(repositories != null){
+        			if(repositories.size() == 0){
+        				res.redirect("/repository/add");
+        				return null;
+        			}
         			attr.put("repositories", repositories.iterator());
         		} else {
         			attr.put("errormessage", "Could not get repositories");
@@ -292,8 +296,10 @@ public class Route {
         	String token = req.session().attribute("token");
         	Map<String, Object> attr = new HashMap<>();
         	if(token != null){
-        		attr.put("owner", req.params(":owner"));
-                attr.put("repository", req.params(":repository"));
+        		String owner = req.params(":owner");
+            	String repository = req.params(":repository");
+        		attr.put("owner", owner);
+                attr.put("repository", repository);
         	} else {
         		attr.put("errormessage", "Could not get token");
         	}
@@ -317,23 +323,31 @@ public class Route {
         	return new ModelAndView(attr, "contributors.ftl");
         }, new FreeMarkerEngine());
         
+        get("/api/:owner/:repository/metrics", (req, res) -> {
+        	if(!this.checkLogin(req, res))
+        		return "{\"statusCode\":500, \"message\":\"You do not have permission to make this call\"}";
+        	String token = req.session().attribute("token");
+        	if(token != null){
+        		String owner = req.params(":owner");
+            	String repository = req.params(":repository");
+        		if(this.business.getRepository(owner, repository) != null){
+                	if(this.fetchInfo(owner, repository, token)){
+                		return "{\"statusCode\":200, \"message\":\"OK\"}";
+                    }
+        		}
+        	}
+        	return "{\"statusCode\":500, \"message\":\"Could not get metrics\"}";
+        });
+        
         get("/api/:owner/:repository/contributors", (req, res) -> {
         	if(!this.checkLogin(req, res))
         		return "{\"statusCode\":500, \"message\":\"You do not have permission to make this call\"}";
         	
         	String token = req.session().attribute("token");
         	if(token != null){
-        		String owner = req.params(":owner");
-            	String repository = req.params(":repository");
-            	//if(this.fetchContributors(owner, repository, token)){
-            		if(this.business.getRepository(owner, repository) != null){
-            			String response = this.business.apiGetContributors();
-            			if(response != null)
-            				return response;
-            		}
-            	/*} else {
-            		return "{\"statusCode\":500, \"message\":\"Could not save contributors\"}";
-            	}*/
+            	String response = this.business.apiGetContributors();
+    			if(response != null)
+    				return response;
         	}
         	return "{\"statusCode\":500, \"message\":\"Could not get contributors\"}";
         });
@@ -357,20 +371,11 @@ public class Route {
         get("/api/:owner/:repository/releases", (req, res) -> {
         	if(!this.checkLogin(req, res))
         		return "{\"statusCode\":500, \"message\":\"You do not have permission to make this call\"}";
-        	
         	String token = req.session().attribute("token");
         	if(token != null){
-        		String owner = req.params(":owner");
-            	String repository = req.params(":repository");
-            	//if(this.fetchReleases(owner, repository, token)){
-            		if(this.business.getRepository(owner, repository) != null){
-            			String response = this.business.apiGetReleases();
-            			if(response != null)
-            				return response;
-            		}
-            	/*} else {
-            		return "{\"statusCode\":500, \"message\":\"Could not save releases\"}";
-            	}*/
+        		String response = this.business.apiGetReleases();
+    			if(response != null)
+    				return response;
         	}
         	return "{\"statusCode\":500, \"message\":\"Could not get releases\"}";
         });
@@ -439,6 +444,25 @@ public class Route {
     	return false;
     }
     
+    private boolean fetchInfo(String owner, String repository, String token){
+    	/*this.gCall = new GitHubCalls(token, owner, repository);
+		
+		String releases = this.gCall.getJSONReleases(token);
+		//String releases = "{\"v1.6.0\":{\"tag_name\":\"v1.6.0\",\"created_at\":\"2016-09-24 04:07:32\",\"commits_per_release\":9,\"loc_release_additions\":46714,\"loc_release_deletions\":188,\"release_forks\":0,\"release_branches\":0,\"release_stars\":0,\"total_number_methods\":1724,\"avg_number_methods_per_class\":8.248803827751196,\"avg_number_of_fields\":8.229665071770334,\"total_number_fields\":1720,\"number_of_files\":209},\"v1.6.1\":{\"tag_name\":\"v1.6.1\",\"created_at\":\"2016-09-26 11:51:20\",\"commits_per_release\":12,\"loc_release_additions\":141,\"loc_release_deletions\":204,\"release_forks\":0,\"release_branches\":0,\"release_stars\":0,\"total_number_methods\":1724,\"avg_number_methods_per_class\":8.248803827751196,\"avg_number_of_fields\":8.224880382775119,\"total_number_fields\":1719,\"number_of_files\":209},\"v1.7.0\":{\"tag_name\":\"v1.7.0\",\"created_at\":\"2016-10-14 04:33:03\",\"commits_per_release\":8,\"loc_release_additions\":3297,\"loc_release_deletions\":722,\"release_forks\":0,\"release_branches\":0,\"release_stars\":0,\"release_issues\":0,\"total_number_methods\":1809,\"avg_number_methods_per_class\":8.413953488372092,\"avg_number_of_fields\":8.172093023255814,\"total_number_fields\":1757,\"number_of_files\":215},\"v1.6.2\":{\"tag_name\":\"v1.6.2\",\"created_at\":\"2016-09-29 06:33:15\",\"commits_per_release\":14,\"loc_release_additions\":150,\"loc_release_deletions\":220,\"release_forks\":0,\"release_branches\":0,\"release_stars\":0,\"total_number_methods\":1722,\"avg_number_methods_per_class\":8.239234449760765,\"avg_number_of_fields\":8.239234449760765,\"total_number_fields\":1722,\"number_of_files\":209},\"v1.7.2\":{\"tag_name\":\"v1.7.2\",\"created_at\":\"2016-10-31 03:46:16\",\"commits_per_release\":21,\"loc_release_additions\":572,\"loc_release_deletions\":518,\"release_forks\":0,\"release_branches\":0,\"release_stars\":0,\"total_number_methods\":1811,\"avg_number_methods_per_class\":8.462616822429906,\"avg_number_of_fields\":8.214953271028037,\"total_number_fields\":1758,\"number_of_files\":214},\"v1.7.3\":{\"tag_name\":\"v1.7.3\",\"created_at\":\"2016-11-01 03:58:06\",\"commits_per_release\":1,\"loc_release_additions\":11,\"loc_release_deletions\":7,\"release_forks\":0,\"release_branches\":0,\"release_stars\":0,\"total_number_methods\":1811,\"avg_number_methods_per_class\":8.462616822429906,\"avg_number_of_fields\":8.214953271028037,\"total_number_fields\":1758,\"number_of_files\":214},\"v1.7.5\":{\"tag_name\":\"v1.7.5\",\"created_at\":\"2016-11-18 02:45:06\",\"commits_per_release\":23,\"loc_release_additions\":964,\"loc_release_deletions\":929,\"release_forks\":1016,\"release_branches\":2,\"release_stars\":5664,\"total_number_methods\":1816,\"avg_number_methods_per_class\":8.446511627906977,\"avg_number_of_fields\":8.223255813953488,\"total_number_fields\":1768,\"number_of_files\":215}}";
+		if(releases != null){
+			if(!this.business.saveReleases(releases)){
+				System.out.println("Could not save releases");
+			}
+			String contribs = this.gCall.getContributors();
+			if(!this.business.saveContributors(contribs)){
+				System.out.println("Could not save contributors");
+			}
+			return true;
+		}
+    	return false;*/
+    	return true;
+    }
+    
     private boolean fetchContributors(String owner, String repository, String token){
 		this.gCall = new GitHubCalls(token, owner, repository);
 		if(this.business.getRepository(owner, repository) != null){
@@ -459,12 +483,12 @@ public class Route {
 			//this.gCall.getReleases();
     		//this.gCall.getCommitsInfo();
     		//this.gCall.makeCallsOnContributorCommit();
-    		String releases = this.gCall.getJSONReleases();
+    		//String releases = this.gCall.getJSONReleases();
     		//String releases = "{\"v0.8.0\":{\"tag_name\":\"v0.8.0\",\"commits_per_release\":1019,\"release_additions\":0,\"release_deletions\":0},\"v0.7.0\":{\"tag_name\":\"v0.7.0\",\"commits_per_release\":823,\"release_additions\":0,\"release_deletions\":0},\"v0.6.1\":{\"tag_name\":\"v0.6.1\",\"commits_per_release\":1225,\"release_additions\":0,\"release_deletions\":0},\"v0.5.0\":{\"tag_name\":\"v0.5.0\",\"commits_per_release\":637,\"release_additions\":143381,\"release_deletions\":437}}";
-			if(this.business.saveReleases(releases)){
+			/*if(this.business.saveReleases(releases)){
 				return true;
 			}
-		//}
+		//}*/
     	return false;
     }
     
@@ -476,38 +500,6 @@ public class Route {
     	return true;
     }
 }
-/*{
-    "gists_url": "https://api.github.com/users/arung90/gists{/gist_id}",
-    "repos_url": "https://api.github.com/users/arung90/repos",
-    "following_url": "https://api.github.com/users/arung90/following{/other_user}",
-    "bio": null,
-    "created_at": "2016-01-04T15:05:30Z",
-    "login": "arung90",
-    "type": "User",
-    "blog": null,
-    "subscriptions_url": "https://api.github.com/users/arung90/subscriptions",
-    "updated_at": "2016-11-05T07:30:33Z",
-    "site_admin": false,
-    "company": null,
-    "id": 16541961,
-    "public_repos": 0,
-    "gravatar_id": "",
-    "email": null,
-    "organizations_url": "https://api.github.com/users/arung90/orgs",
-    "hireable": null,
-    "starred_url": "https://api.github.com/users/arung90/starred{/owner}{/repo}",
-    "followers_url": "https://api.github.com/users/arung90/followers",
-    "public_gists": 0,
-    "url": "https://api.github.com/users/arung90",
-    "received_events_url": "https://api.github.com/users/arung90/received_events",
-    "followers": 0,
-    "avatar_url": "https://avatars.githubusercontent.com/u/16541961?v=3",
-    "events_url": "https://api.github.com/users/arung90/events{/privacy}",
-    "html_url": "https://github.com/arung90",
-    "following": 0,
-    "name": null,
-    "location": null
-}*/
 /*
-    mvn deploy:deploy-file -DgroupId=rit.swen772.ccr -DartifactId=ccr.core -Dversion=1.0 -Durl=file:./local-maven-repo/ -DrepositoryId=local-maven-repo -DupdateReleaseInfo=true -Dfile=/Users/jpavelw/Desktop/ccr.core.3.0.jar
+    mvn deploy:deploy-file -DgroupId=rit.swen772.ccr -DartifactId=core -Dversion=1.2 -Durl=file:./local-maven-repo/ -DrepositoryId=local-maven-repo -DupdateReleaseInfo=true -Dfile=/Users/jpavelw/Desktop/core.1.2.jar
 */

@@ -7,6 +7,6 @@
     <#else>
         <canvas id="metrics-contributors"></canvas>
         <div id="overlay"> <div id="loading-div"></div> </div>
-        <script> window.onload = function(){ load_metrics_contrib(); } </script>
+        <script> window.onload = function(){ show_contrib(); } </script>
     </#if>
 <#include "footer.ftl">

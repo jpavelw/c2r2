@@ -15,7 +15,7 @@
                         <span class="glyphicon glyphicon-log-in" aria-hidden="true"></span> Sign in
                     </button>
                 </p>
-                <h4 class="text-align-center"><small><a href="#">Forgot Password</a></small></h4>
+                <!-- <h4 class="text-align-center"><small><a href="#">Forgot Password</a></small></h4> -->
                 <p class="text-align-center">New user?</p>
                 <p class="text-align-center">
                     <a href="/github/togithub" class="btn btn-lg btn-social btn-github">

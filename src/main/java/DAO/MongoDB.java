@@ -109,8 +109,12 @@ public class MongoDB {
 		List<Document> repos = null;
 		try {
 			List<ObjectId> _ids = (List<ObjectId>) _user.get("repositories");
-			BasicDBObject filter = new BasicDBObject("_id", new BasicDBObject("$in", _ids));
-			repos = this.repositories.find(filter).into(new ArrayList<>());
+			if(_ids != null){
+				BasicDBObject filter = new BasicDBObject("_id", new BasicDBObject("$in", _ids));
+				repos = this.repositories.find(filter).into(new ArrayList<>());
+			} else {
+				repos = new ArrayList<>();
+			}
 		} catch (Exception e) { e.printStackTrace(); }
 		
 		return repos;

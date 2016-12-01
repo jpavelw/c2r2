@@ -18,6 +18,6 @@
         </div>
 
         <div id="overlay"> <div id="loading-div"></div> </div>
-        <script> window.onload = function(){ load_metrics_releases_loc(); } </script>
+        <script> window.onload = function(){ show_metrics_releases(); } </script>
     </#if>
 <#include "footer.ftl">
