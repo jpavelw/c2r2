@@ -130,7 +130,6 @@ public class Business {
     		JsonObject jObject = this.parser.parse(this.currentRepository.toJson()).getAsJsonObject();
     		return jObject;
     	}
-    	
     	return null;
     }
     
@@ -190,11 +189,30 @@ public class Business {
             	jResponse.add("commits_per_release", new JsonArray());
             	jResponse.add("release_additions", new JsonArray());
             	jResponse.add("release_deletions", new JsonArray());
+            	
+            	//jResponse.add("release_forks", new JsonArray());
+            	//jResponse.add("release_branches", new JsonArray());
+            	//jResponse.add("release_stars", new JsonArray());
+            	jResponse.add("number_methods", new JsonArray());
+            	jResponse.add("avg_number_methods_per_class", new JsonArray());
+            	jResponse.add("avg_number_of_fields", new JsonArray());
+            	jResponse.add("number_fields", new JsonArray());
+            	jResponse.add("number_of_files", new JsonArray());
+            	
         		for(JsonElement elem : releases){
         			jResponse.get("tag_name").getAsJsonArray().add(elem.getAsJsonObject().get("tag_name").getAsString());
         			jResponse.get("commits_per_release").getAsJsonArray().add(elem.getAsJsonObject().get("commits_per_release").getAsInt());
         			jResponse.get("release_additions").getAsJsonArray().add(elem.getAsJsonObject().get("loc_release_additions").getAsInt());
         			jResponse.get("release_deletions").getAsJsonArray().add(elem.getAsJsonObject().get("loc_release_deletions").getAsInt());
+        			
+        			//jResponse.get("release_forks").getAsJsonArray().add(elem.getAsJsonObject().get("release_forks").getAsInt());
+        			//jResponse.get("release_branches").getAsJsonArray().add(elem.getAsJsonObject().get("release_branches").getAsInt());
+        			//jResponse.get("release_stars").getAsJsonArray().add(elem.getAsJsonObject().get("release_stars").getAsInt());
+        			jResponse.get("number_methods").getAsJsonArray().add(elem.getAsJsonObject().get("total_number_methods").getAsInt());
+        			jResponse.get("avg_number_methods_per_class").getAsJsonArray().add(elem.getAsJsonObject().get("avg_number_methods_per_class").getAsFloat());
+        			jResponse.get("avg_number_of_fields").getAsJsonArray().add(elem.getAsJsonObject().get("avg_number_of_fields").getAsFloat());
+        			jResponse.get("number_fields").getAsJsonArray().add(elem.getAsJsonObject().get("total_number_fields").getAsInt());
+        			jResponse.get("number_of_files").getAsJsonArray().add(elem.getAsJsonObject().get("number_of_files").getAsInt());
         		}
         		jResponse.addProperty("statusCode", 200);
         		response = this.gson.toJson(jResponse);
@@ -203,25 +221,6 @@ public class Business {
     	
     	return response;
     }
-    
-    /*public String getTokenByUserName(String username){
-    	User user = this.mongoDB.getUserByUsername(username);
-    	if(user != null){
-    		this.currentUser = user;
-    		return user.getToken();
-    	}
-    	return null;
-    }
-    
-    /*public boolean checkLogin(String username, String password) {
-    	User user = this.mongoDB.getUserByUsername(username);
-    	if(user != null){
-    		if (BCrypt.checkpw(password, user.getPassword())) {
-        		return true;
-        	}
-    	}
-    	return false;
-    }*/
 
     public User checkLogin(String username, String password) {
     	User user = null;

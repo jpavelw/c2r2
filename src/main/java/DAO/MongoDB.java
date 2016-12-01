@@ -163,7 +163,7 @@ public class MongoDB {
 	public List<Document> getReleases(ObjectId _repoid){
 		List<Document> releases = null;
 		try {
-			releases = this.releases.find(eq("repository", _repoid)).sort(new BasicDBObject("tag_name", 1)).into(new ArrayList<>());
+			releases = this.releases.find(eq("repository", _repoid)).sort(new BasicDBObject("created_at", 1)).into(new ArrayList<>());
 		} catch (Exception e) { e.printStackTrace(); }
 		
 		return releases;

@@ -41,6 +41,15 @@ function show_loading(){
     var spinner = new Spinner(opts).spin(target);
     $("#overlay").show();
 };
+var backgroundColors = [
+    'rgba(255, 99, 132, ',
+    'rgba(54, 162, 235, ',
+    'rgba(255, 206, 86, ',
+    'rgba(75, 192, 192, ',
+    'rgba(153, 102, 255, ',
+    'rgba(255, 159, 64, ',
+    'rgba(81, 192, 191, '
+];
 
 function load_metrics(){
     show_loading();
@@ -219,20 +228,10 @@ function show_loc_removed(_color, data){
 function show_metrics_releases(){
     show_loading();
 
-    var ctx = $("#metrics-releases");
     var path = window.location.pathname;
     var vars = path.split("/")
     var _link = "/api/" + vars[2] + "/" + vars[3] + "/releases";
 
-    backgroundColors = [
-        'rgba(255, 99, 132, ',
-        'rgba(54, 162, 235, ',
-        'rgba(255, 206, 86, ',
-        'rgba(75, 192, 192, ',
-        'rgba(153, 102, 255, ',
-        'rgba(255, 159, 64, ',
-        'rgba(81, 192, 191, '
-    ];
     var index = Math.floor(Math.random() * 3);
     var _color1 = backgroundColors[index];
     var _color2 = backgroundColors[index+1];
@@ -247,6 +246,174 @@ function show_metrics_releases(){
                 show_releases(_color1, data);
                 show_loc_added(_color2, data);
                 show_loc_removed(_color3, data);
+                $("#overlay").hide();
+            }	else {
+                $("#overlay").hide();
+                alert("error not 200 - " + data.message);
+            }
+        }, error: function(data) {
+            $("#overlay").hide();
+            alert("error - " + data.message);
+        }
+    });
+}
+
+function show_number_methods(_color, data){
+    var ctx = $("#number-methods");
+    var myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.tag_name,
+            datasets: [{
+                data: data.number_methods,
+                borderWidth: 1,
+                borderColor: _color + '1)',
+                backgroundColor: _color + '0.2)'
+            }]
+        },
+        options: {
+            hover: { mode: 'label' },
+            legend: {
+                display: false,
+            },
+            title: {
+                display: true,
+                text: '# of methods per release'
+            },
+        }
+    });
+}
+
+function show_avg_methods(_color, data){
+    var ctx = $("#avg-number-methods");
+    var myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.tag_name,
+            datasets: [{
+                data: data.avg_number_methods_per_class,
+                borderWidth: 1,
+                borderColor: _color + '1)',
+                backgroundColor: _color + '0.2)'
+            }]
+        },
+        options: {
+            hover: { mode: 'label' },
+            legend: {
+                display: false,
+            },
+            title: {
+                display: true,
+                text: 'average of # of methods per class per release'
+            },
+        }
+    });
+}
+
+function show_avg_fields(_color, data){
+    var ctx = $("#avg-number-fields");
+    var myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.tag_name,
+            datasets: [{
+                data: data.avg_number_of_fields,
+                borderWidth: 1,
+                borderColor: _color + '1)',
+                backgroundColor: _color + '0.2)'
+            }]
+        },
+        options: {
+            hover: { mode: 'label' },
+            legend: {
+                display: false,
+            },
+            title: {
+                display: true,
+                text: 'average of # of fields per class per release'
+            },
+        }
+    });
+}
+
+function show_number_fields(_color, data){
+    var ctx = $("#number-fields");
+    var myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.tag_name,
+            datasets: [{
+                data: data.number_fields,
+                borderWidth: 1,
+                borderColor: _color + '1)',
+                backgroundColor: _color + '0.2)'
+            }]
+        },
+        options: {
+            hover: { mode: 'label' },
+            legend: {
+                display: false,
+            },
+            title: {
+                display: true,
+                text: '# of fields per release'
+            },
+        }
+    });
+}
+
+function show_number_files(_color, data){
+    var ctx = $("#number-files");
+    var myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.tag_name,
+            datasets: [{
+                data: data.number_of_files,
+                borderWidth: 1,
+                borderColor: _color + '1)',
+                backgroundColor: _color + '0.2)'
+            }]
+        },
+        options: {
+            hover: { mode: 'label' },
+            legend: {
+                display: false,
+            },
+            title: {
+                display: true,
+                text: '# of files per release'
+            },
+        }
+    });
+}
+
+function show_metrics_source_code(){
+    show_loading();
+
+    var path = window.location.pathname;
+    var vars = path.split("/")
+    var _link = "/api/" + vars[2] + "/" + vars[3] + "/releases";
+
+    var index = Math.floor(Math.random() * 1);
+    var _color1 = backgroundColors[index];
+    var _color2 = backgroundColors[index+1];
+    var _color3 = backgroundColors[index+2];
+    var _color4 = backgroundColors[index+3];
+    var _color5 = backgroundColors[index+4];
+
+    $.ajax({
+        type: "GET",
+        dataType: "json",
+        url: _link,
+        success: function(data) {
+            if(data.statusCode == 200){
+                show_number_methods(_color1, data);
+                show_avg_methods(_color2, data);
+                show_avg_fields(_color3, data);
+                show_number_fields(_color4, data);
+                show_number_files(_color5, data);
+
                 $("#overlay").hide();
             }	else {
                 $("#overlay").hide();

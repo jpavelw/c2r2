@@ -22,12 +22,14 @@ import com.mashape.unirest.http.JsonNode;
 import org.json.JSONObject;
 import org.json.JSONException;
 
+import com.google.gson.JsonObject;
+
 import DAO.User;
 
 public class Route {
 
     private final String CLIENT_ID = System.getenv().get("CLIENT_ID");
-    private final String MY_TOKEN = System.getenv().get("TOKEN");
+    //private final String MY_TOKEN = System.getenv().get("TOKEN");
     private final Business business = new Business();
     private GitHubCalls gCall;
 
@@ -255,35 +257,6 @@ public class Route {
         				attr.put("errormessage", "It is not a valid GitHub username");
         			}
         		}
-        		//GitHubCalls gCall = new GitHubCalls(token, "alibaba", "weex");
-        		//GitHubCalls gCall = new GitHubCalls(token, username, repoName);
-        		
-    			/*Path directory = Paths.get("CCRS.txt");
-    			StringBuilder stringBuilder = new StringBuilder();
-    			if (Files.exists(directory)) {
-    				try (BufferedReader br = new BufferedReader(new FileReader("CCRS.txt"))) {
-                        String line = null;
-                        while ((line = br.readLine()) != null) {
-                            stringBuilder.append(line);
-                        }
-    				}
-    				
-    				File testFile = new File("CCRS.txt");
-    				stringBuilder.append(testFile.getAbsolutePath());
-    				String imageUrl = "http://www.avajava.com/images/avajavalogo.jpg";
-    				String destinationFile = "image.jpg";
-    					
-    				try {
-    					saveImage(imageUrl, destinationFile);
-    					File testImageFile = new File("image.jpg");
-        				stringBuilder.append(testImageFile.getAbsolutePath());
-        				
-        				//JavaCodeParser javaCodeParser = new JavaCodeParser(GitHubCalls.releaseDownloadsPath);
-        				//javaCodeParser.getMetrics();
-
-    				} catch(Exception e) { }
-    				return stringBuilder.toString();
-    			}*/
         	} else {
         		attr.put("errormessage", "Could not get token");
         	}
@@ -298,6 +271,21 @@ public class Route {
         	if(token != null){
         		String owner = req.params(":owner");
             	String repository = req.params(":repository");
+            	JsonObject repo = this.business.getRepository(owner, repository);
+            	if(repo != null){
+            		try {
+            			/*String date = repo.get("createdAt").getAsString();
+            			String description = repo.get("description").getAsString();
+            			String url = repo.get("htmlUrl").getAsString();
+            			
+            			System.out.println(date);
+            			System.out.println(description);
+            			System.out.println(url);*/
+            			attr.put("date", repo.get("repository").getAsJsonObject().get("createdAt").getAsString());
+                		attr.put("description", repo.get("repository").getAsJsonObject().get("description").getAsString());
+                		attr.put("url", repo.get("repository").getAsJsonObject().get("htmlUrl").getAsString());
+            		} catch(Exception e) { e.printStackTrace(); }
+            	}
         		attr.put("owner", owner);
                 attr.put("repository", repository);
         	} else {
@@ -323,6 +311,22 @@ public class Route {
         	return new ModelAndView(attr, "contributors.ftl");
         }, new FreeMarkerEngine());
         
+        get("/repository/:owner/:repository/sourcecode", (req, res) -> {
+        	if(!this.checkLogin(req, res))
+        		return null;
+        	String token = req.session().attribute("token");
+        	Map<String, Object> attr = new HashMap<>();
+            attr.put("hidelogout", true);
+        	if(token != null){
+        		attr.put("owner", req.params(":owner"));
+                attr.put("repository", req.params(":repository"));
+        	} else {
+        		attr.put("errormessage", "Could not get token");
+        		attr.put("detailedmessage", "Please verify you have a valid token to make github calls");
+        	}
+        	return new ModelAndView(attr, "source-code.ftl");
+        }, new FreeMarkerEngine());
+        
         get("/api/:owner/:repository/metrics", (req, res) -> {
         	if(!this.checkLogin(req, res))
         		return "{\"statusCode\":500, \"message\":\"You do not have permission to make this call\"}";
@@ -330,11 +334,11 @@ public class Route {
         	if(token != null){
         		String owner = req.params(":owner");
             	String repository = req.params(":repository");
-        		if(this.business.getRepository(owner, repository) != null){
+        		//if(this.business.getRepository(owner, repository) != null){
                 	if(this.fetchInfo(owner, repository, token)){
                 		return "{\"statusCode\":200, \"message\":\"OK\"}";
                     }
-        		}
+        		//}
         	}
         	return "{\"statusCode\":500, \"message\":\"Could not get metrics\"}";
         });
@@ -377,7 +381,7 @@ public class Route {
     			if(response != null)
     				return response;
         	}
-        	return "{\"statusCode\":500, \"message\":\"Could not get releases\"}";
+        	return "{\"statusCode\":500, \"message\":\"Could not get metrics\"}";
         });
         
         get("/user/login", (req, res) -> {
@@ -461,35 +465,6 @@ public class Route {
 		}
     	return false;*/
     	return true;
-    }
-    
-    private boolean fetchContributors(String owner, String repository, String token){
-		this.gCall = new GitHubCalls(token, owner, repository);
-		if(this.business.getRepository(owner, repository) != null){
-			this.gCall.getReleases();
-    		this.gCall.getCommitsInfo();
-    		//this.gCall.makeCallsOnContributorCommit(MY_TOKEN);
-    		String contribs = this.gCall.getContributors();
-			if(this.business.saveContributors(contribs)){
-				return true;
-			}
-		}
-    	return false;
-    }
-    
-    private boolean fetchReleases(String owner, String repository, String token){
-		//this.gCall = new GitHubCalls(token, owner, repository);
-		//if(this.business.getRepository(owner, repository) != null){
-			//this.gCall.getReleases();
-    		//this.gCall.getCommitsInfo();
-    		//this.gCall.makeCallsOnContributorCommit();
-    		//String releases = this.gCall.getJSONReleases();
-    		//String releases = "{\"v0.8.0\":{\"tag_name\":\"v0.8.0\",\"commits_per_release\":1019,\"release_additions\":0,\"release_deletions\":0},\"v0.7.0\":{\"tag_name\":\"v0.7.0\",\"commits_per_release\":823,\"release_additions\":0,\"release_deletions\":0},\"v0.6.1\":{\"tag_name\":\"v0.6.1\",\"commits_per_release\":1225,\"release_additions\":0,\"release_deletions\":0},\"v0.5.0\":{\"tag_name\":\"v0.5.0\",\"commits_per_release\":637,\"release_additions\":143381,\"release_deletions\":437}}";
-			/*if(this.business.saveReleases(releases)){
-				return true;
-			}
-		//}*/
-    	return false;
     }
     
     private boolean checkLogin(Request req, Response res){
