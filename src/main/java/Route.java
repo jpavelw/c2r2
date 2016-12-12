@@ -29,7 +29,6 @@ import DAO.User;
 public class Route {
 
     private final String CLIENT_ID = System.getenv().get("CLIENT_ID");
-    //private final String MY_TOKEN = System.getenv().get("TOKEN");
     private final Business business = new Business();
     private GitHubCalls gCall;
 
@@ -41,16 +40,6 @@ public class Route {
         	res.redirect("/repositories");
         	return null;
         });
-
-        /*get("/hello/:name", (req, res) -> {
-            return "Hello " + req.params(":name");
-        });*/
-
-        // matches "GET /say/hello/to/world"
-        // request.splat()[0] is 'hello' and request.splat()[1] 'world'
-        //get("/say/*/to/*", (req, res) -> {
-            //return "Number of splat parameters: " + req.splat().length;
-        //});
 
         get("/github/togithub", (req, res) -> {
             //option to generate random state for security purposes
@@ -274,13 +263,6 @@ public class Route {
             	JsonObject repo = this.business.getRepository(owner, repository);
             	if(repo != null){
             		try {
-            			/*String date = repo.get("createdAt").getAsString();
-            			String description = repo.get("description").getAsString();
-            			String url = repo.get("htmlUrl").getAsString();
-            			
-            			System.out.println(date);
-            			System.out.println(description);
-            			System.out.println(url);*/
             			attr.put("date", repo.get("repository").getAsJsonObject().get("createdAt").getAsString());
                 		attr.put("description", repo.get("repository").getAsJsonObject().get("description").getAsString());
                 		attr.put("url", repo.get("repository").getAsJsonObject().get("htmlUrl").getAsString());
@@ -334,11 +316,9 @@ public class Route {
         	if(token != null){
         		String owner = req.params(":owner");
             	String repository = req.params(":repository");
-        		//if(this.business.getRepository(owner, repository) != null){
-                	if(this.fetchInfo(owner, repository, token)){
-                		return "{\"statusCode\":200, \"message\":\"OK\"}";
-                    }
-        		//}
+            	if(this.fetchInfo(owner, repository, token)){
+            		return "{\"statusCode\":200, \"message\":\"OK\"}";
+                }
         	}
         	return "{\"statusCode\":500, \"message\":\"Could not get metrics\"}";
         });

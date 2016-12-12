@@ -17,9 +17,7 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 
 public class MongoDB {
-	private final String DB_USER = System.getenv().get("DB_USER");
-	private final String DB_PASSWORD = System.getenv().get("DB_PASSWORD");
-	private final String CONNECTION_URL = "mongodb://" + this.DB_USER + ":" + this.DB_PASSWORD + "@ds157677.mlab.com:57677/ccr";
+	private final String CONNECTION_URL = System.getenv().get("CONNECTION_URL");
 	private MongoClientURI uri;
     private MongoClient client;
     private MongoDatabase database;
