@@ -13,24 +13,31 @@ Go to the following link and follow the instructions on how to download and inst
 ### 3. Install Heroku Command Line Interface (CLI)
 Go to the following link and follow the instructions on how to download and install Heroku CLI. [Heroku Command Line](https://devcenter.heroku.com/articles/heroku-command-line).
 
-### 4. Install MongoDB
-Go to the following link and follow the instructions on how to download and install MongoDB Server. [MongoDB Server](https://www.mongodb.com/download-center?jmp=nav#community).
-
-For our project, we used mLab. mLab is a fully managed cloud database service which provisions MongoDB databases. [mLab](https://mlab.com).
-
-### 5. Download the web project
-Go to the following link and download the project. [Project Link](https://github.com/jpavelw/c2r2).
-
-You can optionally clone the project if you have GitHub CLI installed on your machine.
-
 Login through the terminal using the following command and using your Heroku credentials (email and password used to login on Heroku):
 
 ```
 $ heroku login
 ```
 
+### 4. Install MongoDB
+Go to the following link and follow the instructions on how to download and install MongoDB Server. [MongoDB Server](https://www.mongodb.com/download-center?jmp=nav#community).
+
+#### 4.1 Using mLab
+You can optionally use mLab, which is what we used for our project. mLab is a fully managed cloud database service which provisions MongoDB databases. [mLab Link](https://mlab.com).
+
+Once you register on the mLab website, create a new MongoBD Deployment. Select your preferred Cloud Provider and select Single Node as the plan. The single node plan provides a free Sandbox (which is the one used for our project) but you can opt for any other of their plans. Provide a Database name and click on Create new MongoDB deployment.
+
+After creating the database, select the database by clicking on it and select the users tab. Create a new user for the database.
+
+### 5. Download the web project
+Go to the following link and download the project. [Project Link](https://github.com/jpavelw/c2r2).
+
+After downloading the project, unzip it.
+
+You can optionally clone the project if you have GitHub CLI installed on your machine.
+
 ### 6. Deploy the project
-After creating the account, create a new app and deploy it with the project you downloaded from GitHub. You can do this from the Heroku website through the dashboard right after you log in. After the application is created, select it (click on it) and click on the Deploy tab. Follow those steps.
+After creating the account on Heroku, create a new app and deploy it with the project you downloaded from GitHub. You can do this from the Heroku website through the dashboard right after you log in. After the application is created, select it (click on it) and click on the Deploy tab. Follow those steps.
 
 ### 7. Create a GitHib application
 Go to your GitHub settings on the GitHub website and click on OAuth Applications. Register a new application and add the callback and homepage URL. It shall be something like *[Homepage URL]/github/callback*.
@@ -60,6 +67,8 @@ To run the project locally run:
 ```
 $ heroku local web
 ```
+
+By running the project locally, you can have access to all the functionalities of the app except the Sign-Up feature because you must authenticate through GitHub and it redirects back to your application.
 
 Once a project is deployed with Heroku, it’s automatically available and up and running.
 
