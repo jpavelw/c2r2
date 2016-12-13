@@ -32,7 +32,7 @@ $ heroku login
 ### 6. Deploy the project
 After creating the account, create a new app and deploy it with the project you downloaded from GitHub. You can do this from the Heroku website through the dashboard right after you log in. After the application is created, select it (click on it) and click on the Deploy tab. Follow those steps.
 
-### 7. Create a GitHib application
+### 7. Create a GitHub application
 Go to your GitHub settings on the GitHub website and click on OAuth Applications. Register a new application and add the callback and homepage URL. It shall be something like *[Homepage URL]/github/callback*.
 
 ### 8. Configure environment variables
