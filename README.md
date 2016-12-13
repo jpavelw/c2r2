@@ -19,7 +19,7 @@ Go to the following link and follow the instructions on how to download and inst
 For our project, we used mLab. mLab is a fully managed cloud database service which provisions MongoDB databases. [mLab](https://mlab.com).
 
 ### 5. Download the web project
-Go to the following link and download the project. [Project Link](https://github.com/jpavelw/mysterious-hollows-64071).
+Go to the following link and download the project. [Project Link](https://github.com/jpavelw/c2r2).
 
 You can optionally clone the project if you have GitHub CLI installed on your machine.
 
@@ -68,4 +68,4 @@ We created an API that processes the information gotten from the GitHub Java API
 
 ## License
 
-The underlying source code used to format and display that content is licensed under the [MIT license](https://github.com/jpavelw/mysterious-hollows-64071/blob/master/LICENSE)
+The underlying source code used to format and display that content is licensed under the [MIT license](https://github.com/jpavelw/c2r2/blob/master/LICENSE)

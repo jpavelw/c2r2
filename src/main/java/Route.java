@@ -92,7 +92,6 @@ public class Route {
                 } catch(JSONException e){
                     try {
                         e.printStackTrace();
-                        //String error = jsonR.getString("error");
                         String message = jsonR.getString("error_description");
                         res.redirect("/github/failed?message="+message);
                     } catch(JSONException ex) { res.redirect("/github/failed?message=Something went terribly wrong"); }
@@ -151,7 +150,6 @@ public class Route {
 
         get("/github/succ", (req, res) -> {
             Map<String, Object> attr = new HashMap<>();
-            //attr.put("result", jsonR.toString());
             attr.put("result", "all good");
             return new ModelAndView(attr, "gh-succ-auth.ftl");
         }, new FreeMarkerEngine());
@@ -195,8 +193,8 @@ public class Route {
         	Map<String, Object> attr = new HashMap<>();
         	attr.put("hidelogout", true);
         	if(token != null){
-        		String username = null;
-        		String repoName = null;
+        		String owner = null;
+        		String repository = null;
         		String choice = req.queryParams("choice");
         		Pattern pattern = null;
         		Matcher matcher = null;
@@ -207,16 +205,28 @@ public class Route {
         			matcher = pattern.matcher(link);
         			if(matcher.matches()){
         				String[] elems = link.split("/");
-            			username = elems[elems.length - 2];
-            			repoName = elems[elems.length - 1];
-            			if(this.validateRepo(username, repoName)){
-            				this.gCall = new GitHubCalls(token, username, repoName);
-            				String[] result = this.business.saveRepository(username, repoName, gCall.getRepository());
-            				if(result[0].equals("OK")){
-            					res.redirect("/repositories");
-            					return null;
+        				owner = elems[elems.length - 2];
+            			repository = elems[elems.length - 1];
+            			if(this.validateRepo(owner, repository)){
+            				String[] result;
+            				if(this.business.checkRepository(owner, repository)){
+            					result = this.business.attachRepository(owner, repository);
+            					if(result[0].equals("OK")){
+                					res.redirect("/repositories");
+                					return null;
+                				} else {
+                					attr.put("errormessage", "Repository NOT saved");
+                				}
             				} else {
-            					attr.put("errormessage", "Repository NOT saved");
+            					this.gCall = new GitHubCalls(token, owner, repository);
+                				result = this.business.saveRepository(gCall.getRepository());
+                				
+                				if(result[0].equals("OK")){
+                					res.redirect("/repositories");
+                					return null;
+                				} else {
+                					attr.put("errormessage", "Repository NOT saved");
+                				}
             				}
             			} else {
             				attr.put("errormessage", "Invalid rep");
@@ -226,16 +236,34 @@ public class Route {
         			}
         		} else if(choice.equals("detailed")){
         			pattern = Pattern.compile("^[a-zA-Z0-9]+(-?[a-zA-Z0-9]+)*$");
-        			username = req.queryParams("username");
-        			matcher = pattern.matcher(username);
+        			owner = req.queryParams("username");
+        			matcher = pattern.matcher(owner);
         			if(matcher.matches()){
         				pattern = Pattern.compile("^[a-zA-Z0-9-_]+$");
-        				repoName = req.queryParams("repository");
-        				matcher = pattern.matcher(repoName);
+        				repository = req.queryParams("repository");
+        				matcher = pattern.matcher(repository);
         				if(matcher.matches()){
-        					if(this.validateRepo(username, repoName)){
-        						res.redirect("/repositories");
-                				return null;
+        					if(this.validateRepo(owner, repository)){
+        						String[] result;
+        						if(this.business.checkRepository(owner, repository)){
+        							result = this.business.attachRepository(owner, repository);
+                					if(result[0].equals("OK")){
+                    					res.redirect("/repositories");
+                    					return null;
+                    				} else {
+                    					attr.put("errormessage", "Repository NOT saved");
+                    				}
+                				} else {
+                					this.gCall = new GitHubCalls(token, owner, repository);
+                    				result = this.business.saveRepository(gCall.getRepository());
+                    				
+                    				if(result[0].equals("OK")){
+                    					res.redirect("/repositories");
+                    					return null;
+                    				} else {
+                    					attr.put("errormessage", "Repository NOT saved");
+                    				}
+                				}
                 			} else {
                 				attr.put("errormessage", "Invalid repo");
                 			}
@@ -316,9 +344,13 @@ public class Route {
         	if(token != null){
         		String owner = req.params(":owner");
             	String repository = req.params(":repository");
-            	if(this.fetchInfo(owner, repository, token)){
+            	if(this.business.checkForReleases()){
             		return "{\"statusCode\":200, \"message\":\"OK\"}";
-                }
+            	} else {
+            		if(this.fetchInfo(owner, repository, token)){
+                		return "{\"statusCode\":200, \"message\":\"OK\"}";
+                    }
+            	}
         	}
         	return "{\"statusCode\":500, \"message\":\"Could not get metrics\"}";
         });
@@ -421,19 +453,16 @@ public class Route {
 				System.out.println("Could not get something");
 			}
 			
-		} catch (UnirestException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		} catch (UnirestException e) { e.printStackTrace(); }
+		
     	return false;
     }
     
     private boolean fetchInfo(String owner, String repository, String token){
-    	/*this.gCall = new GitHubCalls(token, owner, repository);
+    	this.gCall = new GitHubCalls(token, owner, repository);
 		
 		String releases = this.gCall.getJSONReleases(token);
-		//String releases = "{\"v1.6.0\":{\"tag_name\":\"v1.6.0\",\"created_at\":\"2016-09-24 04:07:32\",\"commits_per_release\":9,\"loc_release_additions\":46714,\"loc_release_deletions\":188,\"release_forks\":0,\"release_branches\":0,\"release_stars\":0,\"total_number_methods\":1724,\"avg_number_methods_per_class\":8.248803827751196,\"avg_number_of_fields\":8.229665071770334,\"total_number_fields\":1720,\"number_of_files\":209},\"v1.6.1\":{\"tag_name\":\"v1.6.1\",\"created_at\":\"2016-09-26 11:51:20\",\"commits_per_release\":12,\"loc_release_additions\":141,\"loc_release_deletions\":204,\"release_forks\":0,\"release_branches\":0,\"release_stars\":0,\"total_number_methods\":1724,\"avg_number_methods_per_class\":8.248803827751196,\"avg_number_of_fields\":8.224880382775119,\"total_number_fields\":1719,\"number_of_files\":209},\"v1.7.0\":{\"tag_name\":\"v1.7.0\",\"created_at\":\"2016-10-14 04:33:03\",\"commits_per_release\":8,\"loc_release_additions\":3297,\"loc_release_deletions\":722,\"release_forks\":0,\"release_branches\":0,\"release_stars\":0,\"release_issues\":0,\"total_number_methods\":1809,\"avg_number_methods_per_class\":8.413953488372092,\"avg_number_of_fields\":8.172093023255814,\"total_number_fields\":1757,\"number_of_files\":215},\"v1.6.2\":{\"tag_name\":\"v1.6.2\",\"created_at\":\"2016-09-29 06:33:15\",\"commits_per_release\":14,\"loc_release_additions\":150,\"loc_release_deletions\":220,\"release_forks\":0,\"release_branches\":0,\"release_stars\":0,\"total_number_methods\":1722,\"avg_number_methods_per_class\":8.239234449760765,\"avg_number_of_fields\":8.239234449760765,\"total_number_fields\":1722,\"number_of_files\":209},\"v1.7.2\":{\"tag_name\":\"v1.7.2\",\"created_at\":\"2016-10-31 03:46:16\",\"commits_per_release\":21,\"loc_release_additions\":572,\"loc_release_deletions\":518,\"release_forks\":0,\"release_branches\":0,\"release_stars\":0,\"total_number_methods\":1811,\"avg_number_methods_per_class\":8.462616822429906,\"avg_number_of_fields\":8.214953271028037,\"total_number_fields\":1758,\"number_of_files\":214},\"v1.7.3\":{\"tag_name\":\"v1.7.3\",\"created_at\":\"2016-11-01 03:58:06\",\"commits_per_release\":1,\"loc_release_additions\":11,\"loc_release_deletions\":7,\"release_forks\":0,\"release_branches\":0,\"release_stars\":0,\"total_number_methods\":1811,\"avg_number_methods_per_class\":8.462616822429906,\"avg_number_of_fields\":8.214953271028037,\"total_number_fields\":1758,\"number_of_files\":214},\"v1.7.5\":{\"tag_name\":\"v1.7.5\",\"created_at\":\"2016-11-18 02:45:06\",\"commits_per_release\":23,\"loc_release_additions\":964,\"loc_release_deletions\":929,\"release_forks\":1016,\"release_branches\":2,\"release_stars\":5664,\"total_number_methods\":1816,\"avg_number_methods_per_class\":8.446511627906977,\"avg_number_of_fields\":8.223255813953488,\"total_number_fields\":1768,\"number_of_files\":215}}";
-		if(releases != null){
+		if(releases != null && !releases.isEmpty()){
 			if(!this.business.saveReleases(releases)){
 				System.out.println("Could not save releases");
 			}
@@ -443,8 +472,7 @@ public class Route {
 			}
 			return true;
 		}
-    	return false;*/
-    	return true;
+    	return false;
     }
     
     private boolean checkLogin(Request req, Response res){

@@ -33,7 +33,6 @@ public class Business {
         String[] result = new String[]{"FL", ""};
         if(elements.length == 5){
         	String hasshed = BCrypt.hashpw(elements[3], BCrypt.gensalt());
-        	//if (BCrypt.checkpw(candidate, hashed))
             User user = new User(elements[0], elements[1], elements[2], hasshed, elements[4]);
             if(this.mongoDB.getUserByUsername(elements[0]) == null){
                 if(this.mongoDB.saveUser(user)){
@@ -50,7 +49,7 @@ public class Business {
         return result;
     }
     
-    public String[] saveRepository(String username, String repoName, String repository){
+    public String[] saveRepository(String repository){
     	String[] result = new String[]{"FL", ""};
     	Document myDoc = Document.parse(repository);
     	if(this.mongoDB.saveRepository(myDoc, this.currentUser)){
@@ -122,6 +121,37 @@ public class Business {
     	} catch(Exception e) { e.printStackTrace(); }
     	
     	return response;
+    }
+    
+    public boolean checkRepository(String owner, String repository){
+    	Document result = this.mongoDB.getRepository(owner, repository);
+    	if(result != null)
+    		return true;
+    	return false;
+    }
+    
+    public boolean checkForReleases(){
+    	List<Document> releasesList = this.mongoDB.getReleases(this.currentRepository.getObjectId("_id"));
+    	if(releasesList != null && !releasesList.isEmpty())
+    		return true;
+    	return false;
+    }
+    
+    public String[] attachRepository(String owner, String repository){
+    	String[] result = new String[]{"FL", ""};
+    	Document repo = this.mongoDB.getRepository(owner, repository);
+    	if(repo != null){
+    		if(this.mongoDB.attachRepository(repo, this.currentUser)){
+    			result[0] = "OK";
+    		} else {
+    			result[1] = "Could not attach repository";
+    		}
+    		
+    	} else {
+    		result[1] = "Could not find repository";
+    	}
+    	
+    	return result;
     }
     
     public JsonObject getRepository(String owner, String repository){

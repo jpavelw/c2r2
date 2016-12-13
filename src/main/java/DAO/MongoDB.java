@@ -11,8 +11,6 @@ import static com.mongodb.client.model.Updates.*;
 import java.util.ArrayList;
 import java.util.List;
 
-//import java.util.List;
-
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
@@ -23,13 +21,11 @@ public class MongoDB {
     private MongoDatabase database;
 	private static MongoDB mongoDB;
 	private MongoCollection<Document> users;
-	//private MongoCollection<Document> owners;
 	private MongoCollection<Document> repositories;
 	private MongoCollection<Document> contributors;
 	private MongoCollection<Document> releases;
 
 	private final String USER_COLLECTION = "user";
-	//private final String OWNER_COLLECTION = "owner";
 	private final String REPOSITORY_COLLECTION = "repository";
 	private final String CONTRIBUTOR_COLLECTION = "contributor";
 	private final String RELEASE_COLLECTION = "release";
@@ -40,7 +36,6 @@ public class MongoDB {
 			this.client = new MongoClient(this.uri);
 			this.database = this.client.getDatabase(uri.getDatabase());
 			this.users = this.database.getCollection(this.USER_COLLECTION);
-			//this.owners = this.database.getCollection(this.OWNER_COLLECTION);
 			this.repositories = this.database.getCollection(this.REPOSITORY_COLLECTION);
 			this.contributors = this.database.getCollection(this.CONTRIBUTOR_COLLECTION);
 			this.releases = this.database.getCollection(this.RELEASE_COLLECTION);
@@ -73,6 +68,21 @@ public class MongoDB {
 			return false;
 		}
 		return true;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public boolean attachRepository(Document repository, Document _user){
+		try {
+			this.users.updateOne(eq("_id", _user.getObjectId("_id")), addToSet("repositories", repository.getObjectId("_id")));
+			List<ObjectId> _ids = (List<ObjectId>) _user.get("repositories");
+			if(_ids == null){
+				_ids = new ArrayList<>();
+			}
+			_ids.add(repository.getObjectId("_id"));
+			_user.append("repositories", _ids);
+			return true;
+		}  catch (Exception e){ e.printStackTrace(); }
+		return false;
 	}
 	
 	@SuppressWarnings("unchecked")
